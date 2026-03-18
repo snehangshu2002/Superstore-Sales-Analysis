@@ -1,17 +1,17 @@
 # Sales Performance Analysis
 
-A deep dive into 4 years of superstore sales data (2014-2017) looking at what's actually driving profit and where the business is leaking money.
+Four years of superstore sales data (2014–2017), pulled apart to figure out what's actually making money and what isn't.
 
 ## What's in here
 
-This started as a dataset cleanup exercise and turned into a full analysis of regional performance, product categories, and the real impact of discounting on margins. The Python notebook handles data prep, and the SQL queries dig into the business questions.
+Started as a cleanup exercise, ended up as a full analysis of regional performance, product categories, and discounting. The Python notebook handles data prep. The SQL queries handle the business questions.
 
 ## The Data
 
-- **Raw**: `data/superstore_raw.csv` — 9,994 orders, 21 columns
-- **Cleaned**: `data/superstore_clean.csv` — Same data with engineered features
+- **Raw**: `data/superstore_raw.csv` — 9,994 rows, 21 columns
+- **Cleaned**: `data/superstore_clean.csv` — same data plus 8 engineered features (29 columns total)
 
-The dataset covers 793 customers across four US regions, with transactions from 2014 through 2017. Three product categories: Furniture, Office Supplies, and Technology.
+793 customers across four US regions, 2014–2017. Three product categories: Furniture, Office Supplies, Technology.
 
 ## Project Layout
 
@@ -30,95 +30,75 @@ The dataset covers 793 customers across four US regions, with transactions from 
 
 ## What We Found
 
-### The Big Picture
+### Overall numbers
 
-The business did $2.29M in revenue over four years with $286K in profit — about a 12.5% margin. Average order value sits at $459, and they're discounting roughly 16% across the board.
+$2.29M revenue over four years, $286K profit, 12.47% margin. 5,009 orders, 37,873 units, average order value $458.61. Average discount rate is 15.6% — high enough to matter.
 
-Growth has been steady since 2015, with margins stabilizing around 12-13%.
+Order count went up every year but average order value went down. More transactions, smaller baskets.
 
-### Regional Performance
+### Regional performance
 
-**West and East** are carrying the business:
-- West has the best margins and highest profitability
-- East is the second biggest revenue source with healthy margins
+West and East generate most of the revenue and hold decent margins. West–Consumer is the top profit generator. East–Home Office has the highest margin of any region–segment pair at 20.95%.
 
-**Central region is the problem:**
-- Decent sales volume but terrible margins
-- Texas is the worst offender — third in revenue but actually losing money
-- The culprit is clear: 37% average discount rate
-- Ohio, Pennsylvania, and Illinois are also in negative margin territory
+Central is the problem. Texas is third in revenue and running a $25,729 loss — 37% average discount rate, 49% of orders unprofitable. Ohio, Pennsylvania, and Illinois are in the same situation: loss rates between 44–51%, average discounts of 32–39%.
 
-### Product Categories
+At city level: New York City does $256K at 24.2% margin. Philadelphia, Houston, Chicago, and San Antonio have the opposite problem — strong sales, negative profit. Lafayette, Atlanta, and Minneapolis are small by volume but their margins are above 40%.
 
-**Technology** is the clear winner:
-- $836K revenue, $145K profit
-- 17.4% margin
-- Consistent across all regions
+### Product categories
 
-**Office Supplies**:
-- Highest volume of units sold
-- 17% margin — almost as good as Technology
-- Strong in West and East (20-24% margins), weaker in Central
+Technology: $836K revenue, $145K profit, 17.4% margin. Holds up across every region. Copiers run at 37.2% margin, Paper at 43%+. Central actually posts the strongest Tech margin at 19.77%.
 
-**Furniture is bleeding money:**
-- Similar revenue to Office Supplies but only 2.5% margin
-- Actually loses money in Central region
-- Tables sub-category alone is down $18K
-- The issue is discounting — high rates are destroying profitability
+Office Supplies: highest unit volume, 17% margin. West and East are at 20–24%. Central is weaker.
 
-### The Discount Problem
+Furniture: similar revenue to Office Supplies, 2.5% margin. Tables alone lost ~$18K (-8.56% margin). Bookcases and Supplies are also negative. In Central, the category runs at -1.75%.
 
-There's a hard cutoff around 20%:
+### Discounting
 
-- No discount = 29.5% margin
-- 1-10% discount = barely profitable
-- 20%+ discount = losing money
-- 30%+ discount = -48% margin
+No discount = 29.5% margin. That number deteriorates fast:
 
-Orders with discounts above 20% are almost always loss-making. The business is essentially funding deep discounts directly out of profit.
+| Discount Band | Margin |
+|---|---|
+| 0% | 29.5% |
+| 1–10% | barely profitable |
+| 11–20% | near break-even |
+| 21–30% | loss |
+| 30%+ | -48% |
 
-### Seasonal Patterns
+20% is roughly where the line is. Above it, you're losing money on most orders. There are 418 orders at 70% discount and 300 at 80% — not edge cases, just a pricing problem that's been left running.
 
-Same cycle every year:
-- Revenue builds through Q4
-- Peaks in November-December
-- January-February drops
-- March recovers, steady growth through summer
-- September-November spike before year-end
+### Seasonality
 
-Q4 is the strongest quarter every year. 2015 was a slight dip, but 2016-2017 showed solid recovery.
+Same pattern every year: revenue builds through Q4, peaks in November–December, drops in January–February (sometimes profit goes negative in that window despite decent sales volume), recovers in March, spikes again September–November. Q4 wins every year. 2015 dipped slightly; 2016–2017 recovered well.
 
-### Orders Losing Money
+### Biggest individual losses
 
-Found 58 orders with losses over $500. The pattern is clear:
-- Concentrated in Furniture (Tables, Bookcases)
-- High-value items like 3D printers and binding systems
-- Discount rates of 50-80%
+50 line items with losses over $500. Most are Furniture (Tables, Bookcases, Conference Tables) or high-ticket tech at steep discounts: Cubify CubeX 3D Printers, Lexmark Laser Printers, Cisco TelePresence. GBC and Fellowes binding systems also show up repeatedly. Discount rates on these are 40–80%. The single worst: Cubify CubeX 3D Printer Double Head Print, -$6,599.98 at 70% discount.
 
 ## How It Works
 
-### Data Prep (Python)
+### Data prep (Python)
 
-The notebook `01_data_preparation.ipynb` handles:
+`01_data_preparation.ipynb`:
 
-1. Load the CSV with latin-1 encoding
-2. Convert Order Date and Ship Date to datetime
-3. Extract Year, Month, Quarter, Month_Name
-4. Calculate derived metrics:
-   - Profit_Margin_Pct = (Profit / Sales) * 100
-   - Ship_Lag_Days = days between order and shipment
-   - Is_Loss = True if Profit < 0
-   - Discounted_Revenue = Sales * (1 - Discount)
-5. Export clean dataset
+1. Load CSV with `latin-1` encoding
+2. Convert `Order Date` and `Ship Date` to `datetime64`
+3. Extract `Year`, `Month`, `Quarter`, `Month_Name`
+4. Add derived columns:
+   - `Profit_Margin_Pct` = (Profit / Sales) × 100
+   - `Ship_Lag_Days` = days between order and shipment
+   - `Is_Loss` = True if Profit < 0
+   - `Discounted_Revenue` = Sales × (1 − Discount)
+5. No missing values across all 21 original columns
+6. Export: 9,994 rows, 29 columns
 
-### SQL Analysis
+Raw data ranges: Sales $0.44–$22,638 / Profit -$6,599.98–$8,399.98 / Discount 0–0.80 / Quantity 1–14 units.
 
-Running against MS SQL Server:
+### SQL analysis (MS SQL Server)
 
-- **01_overall_kpis.sql** — Executive metrics, YoY growth, shipping mode breakdown
-- **02_regional_analysis.sql** — State and city profitability, loss concentration
-- **03_category_analysis.sql** — Product performance, discount bands
-- **04_time_series.sql** — Monthly trends, MoM and YoY calculations
+- `01_overall_kpis.sql` — revenue, profit, margin, AOV, discount %, YoY growth via `LAG()`, shipping mode breakdown with average ship days
+- `02_regional_analysis.sql` — region and state profitability, top 15 states by revenue, bottom 10 by profit, region × segment cross-tab, top 20 cities, loss order concentration by geography
+- `03_category_analysis.sql` — category and sub-category performance, bottom 5 loss-making sub-categories, discount band analysis, category × region matrix, top/bottom 10 products by profit
+- `04_time_series.sql` — monthly revenue trend, MoM growth via `LAG()`, quarterly YoY growth partitioned by quarter, category revenue over time
 
 ## Tech Stack
 
@@ -141,11 +121,12 @@ uv run jupyter notebook
 
 ## Recommendations
 
-1. **Cap discounts at 20%** — anything higher and you're losing money
-2. **Fix Central region** — especially Texas operations
-3. **Review Furniture pricing** — the margin is too thin
-4. **Plan for Q4** — seasonal spike is predictable
-5. **Flag high-discount orders** — manual review for anything over 30%
+1. Cap discounts at 20%. The data is clear — above that and most orders lose money.
+2. Central region needs a discount policy. Texas specifically: 37% average discount, -$25,729 total profit. Ohio, Pennsylvania, and Illinois are close behind.
+3. Furniture pricing needs a look. 2.5% category margin means any discount kills it. Tables are already $18K in the hole.
+4. Pull the high-loss product list and review those SKUs. Cubify 3D printers, GBC binding systems, and Chromcraft conference tables keep appearing.
+5. Treat Q4 as predictable. The seasonal spike happens every year — it should be planned for, not reacted to.
+6. Flag orders above 30% discount for manual review. 718 orders at 70–80% off isn't a sales strategy.
 
 ## Author
 
